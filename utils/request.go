@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -45,6 +46,31 @@ func SendRequest(api, method string, params map[string]string) (result []byte, e
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("ioutil.ReadAll fail : ", err)
+		return
+	}
+	return b, nil
+}
+
+func SendRowRequest(api string, data []byte) (result []byte, err error) {
+
+	req, err := http.NewRequest(http.MethodPost, api, bytes.NewReader(data))
+	if err != nil {
+		fmt.Println("NewRequest fail2 : ", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("client.Do fail2 : ", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("ioutil.ReadAll fail2 : ", err)
 		return
 	}
 	return b, nil

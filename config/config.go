@@ -10,6 +10,7 @@ type WorkWxConf struct {
 	Host       string
 	Corpid     int
 	Corpsecret string
+	Touser     string
 }
 
 type Configs struct {
