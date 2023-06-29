@@ -6,6 +6,12 @@ type Resp struct {
 	Data []interface{} `json:"data"`
 }
 
+type ChanMsg struct {
+	Stime    string
+	ServerId string
+	Msg      string
+}
+
 type WorkWxResp struct {
 	Errcode     int    `json:"errcode"`
 	Errmsg      string `json:"errmsg"`

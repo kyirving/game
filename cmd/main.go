@@ -7,22 +7,23 @@ import (
 	"game/utils"
 	"strconv"
 	"sync"
+	"time"
 )
 
 var wg = sync.WaitGroup{}
 
 func main() {
-	respChan := make(chan utils.Resp, 10)
+	chanMsg := make(chan utils.ChanMsg, 10)
 
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
-		go check(strconv.Itoa(i), respChan)
+		go check(strconv.Itoa(i), chanMsg)
 	}
 
 	go func() {
-		for resp := range respChan {
+		for chanData := range chanMsg {
 			fmt.Println("准备发送报警")
-			fmt.Println(resp.Code)
+			utils.SendMessage(chanData.Stime, chanData.ServerId, chanData.Msg)
 		}
 	}()
 
@@ -51,17 +52,16 @@ func main() {
 	// }
 }
 
-func check(status string, resp_chan chan<- utils.Resp) {
+func check(serverid string, chan_msg chan<- utils.ChanMsg) {
 	defer wg.Done()
 
 	params := make(map[string]string, 1)
-	params["status"] = status
+	params["status"] = serverid
 
 	api := "http://127.0.0.1:8000"
 
 	result, err := utils.SendRequest(api, "POST", params)
 	if err != nil {
-		fmt.Println("utils.SendRequest fail :", err)
 		return
 	}
 
@@ -74,6 +74,11 @@ func check(status string, resp_chan chan<- utils.Resp) {
 
 	if resp.Code != 200 {
 		fmt.Println("发送数据")
-		resp_chan <- *resp
+		chanMsg := &utils.ChanMsg{
+			Stime:    time.Now().Format("2006-01-02 15:04:05"),
+			ServerId: serverid,
+			Msg:      resp.Msg,
+		}
+		chan_msg <- *chanMsg
 	}
 }
