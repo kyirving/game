@@ -13,8 +13,14 @@ type WorkWxConf struct {
 	Touser     string
 }
 
+type GameConf struct {
+	Host    string
+	PoolNum int
+}
+
 type Configs struct {
 	*WorkWxConf
+	*GameConf
 }
 
 var Config Configs
@@ -30,12 +36,20 @@ func init() {
 	}
 
 	var workWxConf WorkWxConf
+	var gameConf GameConf
+
 	err = viper.UnmarshalKey("workwx", &workWxConf)
 	if err != nil {
-		panic(fmt.Errorf("fatal error viper.UnmarshalKey: %w", err))
+		panic(fmt.Errorf("fatal error viper.UnmarshalKey['workwx']: %w", err))
+	}
+
+	err = viper.UnmarshalKey("game", &gameConf)
+	if err != nil {
+		panic(fmt.Errorf("fatal error viper.UnmarshalKey['game']: %w", err))
 	}
 
 	Config = Configs{
 		&workWxConf,
+		&gameConf,
 	}
 }

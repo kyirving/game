@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	_ "game/config"
+	"game/config"
 	"game/utils"
 	"strconv"
 	"sync"
@@ -27,14 +27,7 @@ func main() {
 	//工作通道
 	jobChan = make(chan string, reqNum)
 	createJobChan(reqNum)
-
-	createPool(100)
-
-	// //检查区服登录是否异常
-	// for i := 1; i <= reqNum; i++ {
-	// 	wg.Add(1)
-	// 	go checkGame(strconv.Itoa(i), chanMsg, chanTask)
-	// }
+	createPool(config.Config.PoolNum)
 
 	wg.Add(1)
 	go CheckOK(chanTask, chanMsg, reqNum)
@@ -61,15 +54,7 @@ func createPool(num int) {
 	}
 }
 
-// func taskPool() {
-// 	for server_id := range jobChan {
-// 		checkGame(server_id, chanMsg, chanTask)
-// 	}
-// 	defer wg.Done()
-// }
-
 func createJobChan(reqNum int) {
-	// defer wg.Done()
 	for i := 1; i <= reqNum; i++ {
 		jobChan <- strconv.Itoa(i)
 	}

@@ -18,7 +18,7 @@ var AccessToken string
 
 func generateToken() {
 	path := "/gettoken"
-	api := fmt.Sprintf("%s%s", config.Config.Host, path)
+	api := fmt.Sprintf("%s%s", config.Config.WorkWxConf.Host, path)
 
 	params := make(map[string]string, 2)
 	params["corpid"] = strconv.Itoa(config.Config.Corpid)
@@ -54,7 +54,7 @@ func SendMessage(stime, server_id, msg string) {
 	data["agentid"] = strconv.Itoa(config.Config.Corpid)
 	data["markdown"] = content
 
-	api := fmt.Sprintf("%s/message/send?%s", config.Config.Host, AccessToken)
+	api := fmt.Sprintf("%s/message/send?%s", config.Config.WorkWxConf.Host, AccessToken)
 	b, err := json.Marshal(data)
 	if err != nil {
 		fmt.Println("Marshal fail :", err)
