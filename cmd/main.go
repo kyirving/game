@@ -10,49 +10,37 @@ import (
 	"time"
 )
 
-var wg = sync.WaitGroup{}
+var (
+	wg       sync.WaitGroup
+	chanMsg  chan utils.ChanMsg
+	chanTask chan string
+	reqNum   int
+)
 
 func main() {
-	chanMsg := make(chan utils.ChanMsg, 10)
+	reqNum = 10
+	chanMsg = make(chan utils.ChanMsg, reqNum)
+	//任务统计
+	chanTask = make(chan string, reqNum)
 
-	for i := 0; i < 10; i++ {
+	for i := 1; i <= reqNum; i++ {
 		wg.Add(1)
-		go check(strconv.Itoa(i), chanMsg)
+		go check(strconv.Itoa(i), chanMsg, chanTask)
 	}
 
-	go func() {
-		for chanData := range chanMsg {
-			fmt.Println("准备发送报警")
-			utils.SendMessage(chanData.Stime, chanData.ServerId, chanData.Msg)
-		}
-	}()
+	wg.Add(1)
+	CheckOK(chanTask, chanMsg, reqNum)
 
+	//发送通知协程
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go sendMsgTask(chanMsg)
+	}
 	wg.Wait()
-	fmt.Println("All goroutines completed")
-
-	// 此方案也能实现，但需要所有线程执行完毕执行，可能出现通道内数据过多
-	// for {
-	// 	select {
-	// 	case resp := <-respChan:
-	// 		fmt.Println("准备发送报警")
-	// 		fmt.Println(resp.Code)
-	// 	case <-time.After(3 * time.Second):
-	// 		fmt.Println("Timeout occurred")
-	// 		return
-	// 	default:
-
-	// 		close(respChan)
-	// 		return
-	// 	}
-	// }
-
-	// 此代码会阻塞，可新起通道配合任务监测，关闭respChan通道退出程序，但并不优雅
-	// for v := range respChan {
-	// 	fmt.Println(v)
-	// }
+	fmt.Println("All goroutines finish")
 }
 
-func check(serverid string, chan_msg chan<- utils.ChanMsg) {
+func check(serverid string, chan_msg chan<- utils.ChanMsg, chan_task chan<- string) {
 	defer wg.Done()
 
 	params := make(map[string]string, 1)
@@ -73,7 +61,6 @@ func check(serverid string, chan_msg chan<- utils.ChanMsg) {
 	}
 
 	if resp.Code != 200 {
-		fmt.Println("发送数据")
 		chanMsg := &utils.ChanMsg{
 			Stime:    time.Now().Format("2006-01-02 15:04:05"),
 			ServerId: serverid,
@@ -81,4 +68,32 @@ func check(serverid string, chan_msg chan<- utils.ChanMsg) {
 		}
 		chan_msg <- *chanMsg
 	}
+	// 用于监控协程知道已经完成了几个任务
+	chan_task <- serverid
+}
+
+// 任务统计协程
+func CheckOK(chan_task <-chan string, chanMsg chan utils.ChanMsg, reqNum int) {
+	defer wg.Done()
+	var count int
+	for {
+		server_id := <-chan_task
+		fmt.Printf("%s 完成了检查任务\n", server_id)
+		count++
+		if count == reqNum {
+			fmt.Println("检查协助已执行完毕")
+			close(chanMsg)
+			break
+		}
+	}
+}
+
+func sendMsgTask(chanMsg chan utils.ChanMsg) {
+	defer wg.Done()
+
+	for chanData := range chanMsg {
+		fmt.Println("准备发送报警: ", chanData)
+		// utils.SendMessage(chanData.Stime, chanData.ServerId, chanData.Msg)
+	}
+	fmt.Println("准备退出")
 }
