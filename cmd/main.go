@@ -14,22 +14,30 @@ var (
 	wg       sync.WaitGroup
 	chanMsg  chan utils.ChanMsg
 	chanTask chan string
+	jobChan  chan string
 	reqNum   int
 )
 
 func main() {
-	reqNum = 10
+	reqNum = 1000
 	chanMsg = make(chan utils.ChanMsg, reqNum)
 	//任务统计
 	chanTask = make(chan string, reqNum)
 
-	for i := 1; i <= reqNum; i++ {
-		wg.Add(1)
-		go check(strconv.Itoa(i), chanMsg, chanTask)
-	}
+	//工作通道
+	jobChan = make(chan string, reqNum)
+	createJobChan(reqNum)
+
+	createPool(100)
+
+	// //检查区服登录是否异常
+	// for i := 1; i <= reqNum; i++ {
+	// 	wg.Add(1)
+	// 	go checkGame(strconv.Itoa(i), chanMsg, chanTask)
+	// }
 
 	wg.Add(1)
-	CheckOK(chanTask, chanMsg, reqNum)
+	go CheckOK(chanTask, chanMsg, reqNum)
 
 	//发送通知协程
 	for i := 0; i < 5; i++ {
@@ -40,9 +48,35 @@ func main() {
 	fmt.Println("All goroutines finish")
 }
 
-func check(serverid string, chan_msg chan<- utils.ChanMsg, chan_task chan<- string) {
-	defer wg.Done()
+//创建工作池
+func createPool(num int) {
+	for i := 0; i < num; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for server_id := range jobChan {
+				checkGame(server_id, chanMsg, chanTask)
+			}
+		}()
+	}
+}
 
+// func taskPool() {
+// 	for server_id := range jobChan {
+// 		checkGame(server_id, chanMsg, chanTask)
+// 	}
+// 	defer wg.Done()
+// }
+
+func createJobChan(reqNum int) {
+	// defer wg.Done()
+	for i := 1; i <= reqNum; i++ {
+		jobChan <- strconv.Itoa(i)
+	}
+	defer close(jobChan)
+}
+
+func checkGame(serverid string, chan_msg chan<- utils.ChanMsg, chan_task chan<- string) {
 	params := make(map[string]string, 1)
 	params["status"] = serverid
 
