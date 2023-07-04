@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 func SendRequest(api, method string, params map[string]string) (result []byte, err error) {
@@ -35,7 +36,10 @@ func SendRequest(api, method string, params map[string]string) (result []byte, e
 	//todo 一定要设置请求头 否则服务端获取不到请求参数
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	client := &http.Client{}
+	// 创建一个 HTTP 客户端
+	client := &http.Client{
+		Timeout: 10 * time.Second, // 设置超时时间为 10 秒
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("client.Do fail : ", err)
@@ -60,7 +64,10 @@ func SendRowRequest(api string, data []byte) (result []byte, err error) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
+	// 创建一个 HTTP 客户端
+	client := &http.Client{
+		Timeout: 10 * time.Second, // 设置超时时间为 10 秒
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("client.Do fail2 : ", err)
