@@ -8,6 +8,7 @@ import (
 
 type WorkWxConf struct {
 	Host       string
+	WebhookKey string
 	Corpid     int
 	Corpsecret string
 	Touser     string

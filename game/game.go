@@ -15,10 +15,10 @@ var (
 	chanTask chan string
 	jobChan  chan utils.Server
 	reqNum   int
+	msgMap   sync.Map
 )
 
 func Run() {
-
 	server_list, err := getServer()
 	if err != nil {
 		fmt.Println("获取区服列表失败")
@@ -46,8 +46,19 @@ func Run() {
 		wg.Add(1)
 		go sendMsgTask(chanMsg)
 	}
+
 	wg.Wait()
 	fmt.Println("All goroutines finish")
+	// 遍历
+	content := ""
+	msgMap.Range(func(key, value interface{}) bool {
+
+		if ChanMsg, ok := value.(utils.ChanMsg); ok {
+			
+		}
+		return true
+	})
+
 }
 
 //创建工作池
@@ -122,6 +133,7 @@ func sendMsgTask(chanMsg chan utils.ChanMsg) {
 
 	for chanData := range chanMsg {
 		fmt.Println("准备发送报警: ", chanData)
+		msgMap.Store(chanData.ServerId, chanData)
 		// utils.SendMessage(chanData.Stime, chanData.ServerId, chanData.Msg)
 	}
 	fmt.Println("准备退出")
