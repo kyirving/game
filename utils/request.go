@@ -25,8 +25,13 @@ func SendRequest(api, method string, params map[string]string) (result []byte, e
 		req, err = http.NewRequest(method, api, strings.NewReader(values.Encode()))
 	case http.MethodGet:
 		// 将参数编码到 URL 中
-		urlWithParams := api + "?" + values.Encode()
-		req, err = http.NewRequest(method, urlWithParams, nil)
+		var url string
+		if values.Encode() != "" {
+			url = api + "?" + values.Encode()
+		} else {
+			url = api
+		}
+		req, err = http.NewRequest(method, url, nil)
 	}
 	if err != nil {
 		fmt.Println("NewRequest fail : ", err)

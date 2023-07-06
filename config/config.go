@@ -14,8 +14,10 @@ type WorkWxConf struct {
 }
 
 type GameConf struct {
-	Host    string
-	PoolNum int
+	ServerList   string
+	ServerStatus string
+	Host         string
+	PoolNum      int
 }
 
 type Configs struct {

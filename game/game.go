@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"game/config"
 	"game/utils"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -14,19 +13,29 @@ var (
 	wg       sync.WaitGroup
 	chanMsg  chan utils.ChanMsg
 	chanTask chan string
-	jobChan  chan string
+	jobChan  chan utils.Server
 	reqNum   int
 )
 
 func Run() {
-	reqNum = 10
+
+	server_list, err := getServer()
+	if err != nil {
+		fmt.Println("获取区服列表失败")
+		return
+	}
+
+	server_list = server_list[:10]
+
+	//区服监测数
+	reqNum = len(server_list)
+	//区服监测响应信息
 	chanMsg = make(chan utils.ChanMsg, reqNum)
 	//任务统计
 	chanTask = make(chan string, reqNum)
-
 	//工作通道
-	jobChan = make(chan string, reqNum)
-	createJobChan(reqNum)
+	jobChan = make(chan utils.Server, reqNum)
+	createJobChan(server_list)
 	createPool(config.Config.PoolNum)
 
 	wg.Add(1)
@@ -47,50 +56,49 @@ func createPool(num int) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for server_id := range jobChan {
-				checkGame(server_id, chanMsg, chanTask)
+			for server := range jobChan {
+				checkGame(server, chanMsg, chanTask)
 			}
 		}()
 	}
 }
 
-func createJobChan(reqNum int) {
-	for i := 1; i <= reqNum; i++ {
-		jobChan <- strconv.Itoa(i)
+//往工作通道写任务供工作池使用
+func createJobChan(server_list []utils.Server) {
+	for _, server := range server_list {
+		jobChan <- server
 	}
 	defer close(jobChan)
 }
 
-func checkGame(serverid string, chan_msg chan<- utils.ChanMsg, chan_task chan<- string) {
-	params := make(map[string]string, 1)
-	params["status"] = serverid
+func checkGame(server utils.Server, chan_msg chan<- utils.ChanMsg, chan_task chan<- string) {
+	params := make(map[string]string, 2)
+	params["trueZoneId"] = server.ServerId
 
-	api := "http://127.0.0.1:8000"
-
-	result, err := utils.SendRequest(api, "POST", params)
+	result, err := utils.SendRequest(config.Config.GameConf.ServerStatus, "GET", params)
 	if err != nil {
 		// 用于监控协程知道已经完成了几个任务
-		chan_task <- serverid
+		chan_task <- server.ServerId
 		return
 	}
 
 	resp := &utils.Resp{}
 	err = json.Unmarshal(result, &resp)
 	if err != nil {
-		chan_task <- serverid
+		chan_task <- server.ServerId
 		fmt.Println("json.Unmarshal fail :", err)
 		return
 	}
 
-	if resp.Code != 200 {
+	if resp.RetCode != 1 {
 		chanMsg := &utils.ChanMsg{
 			Stime:    time.Now().Format("2006-01-02 15:04:05"),
-			ServerId: serverid,
+			ServerId: server.ServerId,
 			Msg:      resp.Msg,
 		}
 		chan_msg <- *chanMsg
 	}
-	chan_task <- serverid
+	chan_task <- server.ServerId
 }
 
 // 任务统计协程
@@ -117,4 +125,20 @@ func sendMsgTask(chanMsg chan utils.ChanMsg) {
 		// utils.SendMessage(chanData.Stime, chanData.ServerId, chanData.Msg)
 	}
 	fmt.Println("准备退出")
+}
+
+//获取区服列表
+func getServer() (server_list []utils.Server, err error) {
+	server_list = []utils.Server{}
+	resp, err := utils.SendRequest(config.Config.GameConf.ServerList, "GET", nil)
+	if err != nil {
+		fmt.Println("utils.SendRequest fail :", err)
+		return
+	}
+
+	err = json.Unmarshal(resp, &server_list)
+	if err != nil {
+		fmt.Println("json.Unmarshal fail :", err)
+	}
+	return
 }
