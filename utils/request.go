@@ -31,6 +31,7 @@ func SendRequest(api, method string, params map[string]string) (result []byte, e
 		} else {
 			url = api
 		}
+		fmt.Println(url)
 		req, err = http.NewRequest(method, url, nil)
 	}
 	if err != nil {
@@ -43,7 +44,7 @@ func SendRequest(api, method string, params map[string]string) (result []byte, e
 
 	// 创建一个 HTTP 客户端
 	client := &http.Client{
-		Timeout: 10 * time.Second, // 设置超时时间为 10 秒
+		Timeout: 20 * time.Second, // 设置超时时间为 10 秒
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -71,7 +72,7 @@ func SendRowRequest(api string, data []byte) (result []byte, err error) {
 
 	// 创建一个 HTTP 客户端
 	client := &http.Client{
-		Timeout: 10 * time.Second, // 设置超时时间为 10 秒
+		Timeout: 20 * time.Second, // 设置超时时间为 10 秒
 	}
 	resp, err := client.Do(req)
 	if err != nil {

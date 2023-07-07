@@ -1,12 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"game/game"
+	"time"
 )
 
 func main() {
-
+	start := time.Now()
 	game.Run()
+
+	elapsed := time.Since(start)
+	fmt.Printf("程序运行时间：%s\n", elapsed)
 
 	// c := cron.New()
 	// c.AddFunc("0 */5 * * * *", func() {

@@ -19,6 +19,8 @@ type GameConf struct {
 	ServerStatus string
 	Host         string
 	PoolNum      int
+	GameId       int
+	PtId         int
 }
 
 type Configs struct {

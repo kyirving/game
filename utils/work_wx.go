@@ -44,52 +44,38 @@ func generateToken() {
 	}
 }
 
-func SendMessage(stime, server_id, msg string) {
+func SendMessage(message string) bool {
 	data := make(map[string]interface{}, 3)
 	content := make(map[string]string, 1)
-	content["content"] = fmt.Sprintf(message, stime, server_id, msg)
+	content["content"] = message
 
-	// data["touser"] = config.Config.Touser
-	// data["agentid"] = strconv.Itoa(config.Config.Corpid)
 	data["msgtype"] = "markdown"
 	data["markdown"] = content
 
-	return
 	api := fmt.Sprintf("%s/webhook/send?key=%s", config.Config.WorkWxConf.Host, config.Config.WorkWxConf.WebhookKey)
+	fmt.Println(api)
 	b, err := json.Marshal(data)
 	if err != nil {
 		fmt.Println("Marshal fail :", err)
-		return
+		return false
 	}
 	result, err := SendRowRequest(api, b)
 	if err != nil {
 		fmt.Println("SendRowRequest fail :", err)
-		return
+		return false
 	}
 
 	var workWxresp = WorkWxResp{}
 	err = json.Unmarshal(result, &workWxresp)
 	if err != nil {
 		fmt.Println("json.Unmarshal fail :", err)
-		return
+		return false
 	}
 
 	if workWxresp.Errcode != 0 {
 		fmt.Println("发送消息失败 :", workWxresp)
-		// codes := make(map[int]string, 2)
-		// codes[40014] = "不合法的access_token"
-		// codes[41001] = "缺少access_token参数"
-		// codes[42001] = "access_token已过期"
-
-		// if _, ok := codes[workWxresp.Errcode]; ok {
-		// 	AccessToken = ""
-		// 	generateToken()
-		// 	SendMessage(stime, server_id, msg)
-		// 	//token
-		// 	fmt.Println("发送消息失败，正在重新发送")
-		// }
-		return
+		return false
 	}
 	fmt.Println("发送通知成功")
-
+	return true
 }

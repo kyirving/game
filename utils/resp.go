@@ -12,14 +12,14 @@ type Resp struct {
 }
 
 type Server struct {
-	ServerId   string `json:"server_id"`
+	ServerId   int    `json:"server_id"`
 	ServerName string `json:"server_name"`
 	StratTime  string `json:"strat_time"`
 }
 
 type ChanMsg struct {
 	Stime    string
-	ServerId string
+	ServerId int
 	Msg      string
 }
 
