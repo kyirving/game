@@ -53,7 +53,6 @@ func SendMessage(message string) bool {
 	data["markdown"] = content
 
 	api := fmt.Sprintf("%s/webhook/send?key=%s", config.Config.WorkWxConf.Host, config.Config.WorkWxConf.WebhookKey)
-	fmt.Println(api)
 	b, err := json.Marshal(data)
 	if err != nil {
 		fmt.Println("Marshal fail :", err)
@@ -76,6 +75,5 @@ func SendMessage(message string) bool {
 		fmt.Println("发送消息失败 :", workWxresp)
 		return false
 	}
-	fmt.Println("发送通知成功")
 	return true
 }

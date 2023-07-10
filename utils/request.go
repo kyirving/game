@@ -31,7 +31,6 @@ func SendRequest(api, method string, params map[string]string) (result []byte, e
 		} else {
 			url = api
 		}
-		fmt.Println(url)
 		req, err = http.NewRequest(method, url, nil)
 	}
 	if err != nil {
