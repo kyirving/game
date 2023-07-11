@@ -22,6 +22,12 @@ var (
 )
 
 func Run() {
+
+	if isExit() {
+		fmt.Println("维护中!!!")
+		return
+	}
+
 	batchCount = 10
 	server_list, err := getServer()
 	if err != nil {
@@ -56,8 +62,7 @@ func Run() {
 	fmt.Println("All goroutines finish")
 	fmt.Println("totalReq :", totalReq)
 	// 遍历
-	// content := "**区服异常通知【测试】**\n"
-	content := ""
+	content := "**【盟重英雄冰雪单职业（244）】区服异常通知**\n"
 	msgMap.Range(func(key, value interface{}) bool {
 		if ChanMsg, ok := value.(utils.ChanMsg); ok {
 			content += fmt.Sprintf("> server_id: %s \n> 异常信息 ： %s \n\n", ChanMsg.ServerId, ChanMsg.Msg)
@@ -131,12 +136,14 @@ func checkGame(game_id, ptid int, servers []utils.Server, chan_msg chan<- utils.
 	// fmt.Println(resp)
 	for _, res := range resp {
 		if res.RetCode != 0 {
-			chanMsg := &utils.ChanMsg{
+			chanMsg := utils.ChanMsg{
 				Stime:    time.Now().Format("2006-01-02 15:04:05"),
 				ServerId: res.ServerId,
 				Msg:      res.Msg,
 			}
-			chan_msg <- *chanMsg
+			fmt.Println("servers", servers)
+			fmt.Println("chanMsg", chanMsg)
+			chan_msg <- chanMsg
 		}
 	}
 	chan_task <- 1
@@ -182,4 +189,19 @@ func getServer() (server_list []utils.Server, err error) {
 		fmt.Println("json.Unmarshal fail :", err)
 	}
 	return
+}
+
+func isExit() bool {
+	now := time.Now()
+	weekDay := int(now.Weekday())
+
+	if weekDay == 2 {
+		stime := time.Date(now.Year(), now.Month(), now.Day(), 10, 0, 0, 0, now.Location())
+		etime := time.Date(now.Year(), now.Month(), now.Day(), 11, 30, 0, 0, now.Location())
+		if now.After(stime) && now.Before(etime) {
+			return true
+		}
+	}
+
+	return false
 }
