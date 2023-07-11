@@ -11,13 +11,13 @@ go mod tidy
 
 ###### linux
 ```go
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/linux/exec cmd/main.go
+GOOS=linux GOARCH=amd64 go build -o bin/linux/exec cmd/main.go
 ```
 ###### windows
 ```go
-CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o bin/windows/exec cmd/main.go
+GOOS=windows GOARCH=amd64 go build -o bin/windows/exec.exe cmd/main.go
 ```
 ###### mac
 ```go
-go build -o bin/mac/exec cmd/main.go
+GOOS=darwin GOARCH=amd64 go build -o bin/mac/exec cmd/main.go
 ```

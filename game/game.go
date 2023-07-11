@@ -5,21 +5,24 @@ import (
 	"fmt"
 	"game/config"
 	"game/utils"
-	"strconv"
+	"math"
 	"sync"
 	"time"
 )
 
 var (
-	wg       sync.WaitGroup
-	chanMsg  chan utils.ChanMsg
-	chanTask chan int
-	jobChan  chan utils.Server
-	reqNum   int
-	msgMap   sync.Map
+	wg         sync.WaitGroup
+	chanMsg    chan utils.ChanMsg
+	chanTask   chan int
+	jobChan    chan []utils.Server
+	reqNum     int
+	msgMap     sync.Map
+	batchCount int
+	totalReq   int
 )
 
 func Run() {
+	batchCount = 10
 	server_list, err := getServer()
 	if err != nil {
 		fmt.Println("获取区服列表失败")
@@ -27,14 +30,16 @@ func Run() {
 	}
 
 	//区服监测数
-	reqNum = len(server_list)
+	reqNum = int(math.Ceil(float64(len(server_list)) / float64(batchCount)))
+	// num := math.Ceil(float64(len(server_list) / batchCount))
+
 	//区服监测响应信息
 	chanMsg = make(chan utils.ChanMsg, reqNum)
 	//任务统计
 	chanTask = make(chan int, reqNum)
 	//工作通道
-	jobChan = make(chan utils.Server, reqNum)
-	createJobChan(server_list)
+	jobChan = make(chan []utils.Server, reqNum)
+	createJobChan(server_list, batchCount)
 	//线程池发送监测请求
 	createPool(config.Config.GameConf.GameId, config.Config.GameConf.PtId, config.Config.PoolNum)
 
@@ -49,12 +54,13 @@ func Run() {
 
 	wg.Wait()
 	fmt.Println("All goroutines finish")
+	fmt.Println("totalReq :", totalReq)
 	// 遍历
 	// content := "**区服异常通知【测试】**\n"
 	content := ""
 	msgMap.Range(func(key, value interface{}) bool {
 		if ChanMsg, ok := value.(utils.ChanMsg); ok {
-			content += fmt.Sprintf("> server_id: %d \n> 异常信息 ： %s \n\n", ChanMsg.ServerId, ChanMsg.Msg)
+			content += fmt.Sprintf("> server_id: %s \n> 异常信息 ： %s \n\n", ChanMsg.ServerId, ChanMsg.Msg)
 		}
 		return true
 	})
@@ -75,51 +81,65 @@ func createPool(game_id, ptid, num int) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for server := range jobChan {
-				checkGame(game_id, ptid, server, chanMsg, chanTask)
+			for servers := range jobChan {
+				totalReq++
+				start := time.Now()
+				checkGame(game_id, ptid, servers, chanMsg, chanTask)
+				elapsed := time.Since(start)
+				fmt.Printf("request-runtime：%s\n", elapsed)
 			}
 		}()
 	}
 }
 
 //往工作通道写任务供工作池使用
-func createJobChan(server_list []utils.Server) {
-	for _, server := range server_list {
-		jobChan <- server
+func createJobChan(server_list []utils.Server, batchCount int) {
+	for i := 0; i < len(server_list); i += batchCount {
+		end := i + batchCount
+		if end > len(server_list) {
+			end = len(server_list)
+		}
+		batch := server_list[i:end]
+		jobChan <- batch
+
 	}
 	defer close(jobChan)
 }
 
-func checkGame(game_id, ptid int, server utils.Server, chan_msg chan<- utils.ChanMsg, chan_task chan<- int) {
-	params := make(map[string]string, 2)
-	params["trueZoneId"] = strconv.Itoa(server.ServerId)
-	params["GameId"] = strconv.Itoa(game_id)
-	params["PtId"] = strconv.Itoa(ptid)
+func checkGame(game_id, ptid int, servers []utils.Server, chan_msg chan<- utils.ChanMsg, chan_task chan<- int) {
 
-	result, err := utils.SendRequest(config.Config.GameConf.ServerStatus, "GET", params)
+	var batchParams []map[string]int
+	for _, v := range servers {
+		batchParams = append(batchParams, map[string]int{"Ptid": ptid, "GameId": game_id, "trueZoneId": v.ServerId})
+	}
+
+	result, err := utils.SendBatchRequest(config.Config.GameConf.ServerStatus, "POST", batchParams)
 	if err != nil {
 		// 用于监控协程知道已经完成了几个任务
-		chan_task <- server.ServerId
+		chan_task <- 1
 		return
 	}
 
-	resp := &utils.Resp{}
+	resp := []utils.Resp{}
 	err = json.Unmarshal(result, &resp)
 	if err != nil {
-		chan_task <- server.ServerId
+		chan_task <- 1
 		fmt.Println("json.Unmarshal fail :", err)
 		return
 	}
 
-	if resp.RetCode != 0 {
-		chanMsg := &utils.ChanMsg{
-			Stime:    time.Now().Format("2006-01-02 15:04:05"),
-			ServerId: server.ServerId,
-			Msg:      resp.Msg,
+	// fmt.Println(resp)
+	for _, res := range resp {
+		if res.RetCode != 0 {
+			chanMsg := &utils.ChanMsg{
+				Stime:    time.Now().Format("2006-01-02 15:04:05"),
+				ServerId: res.ServerId,
+				Msg:      res.Msg,
+			}
+			chan_msg <- *chanMsg
 		}
-		chan_msg <- *chanMsg
 	}
-	chan_task <- server.ServerId
+	chan_task <- 1
 }
 
 // 任务统计协程
@@ -127,8 +147,9 @@ func CheckOK(chan_task <-chan int, chanMsg chan utils.ChanMsg, reqNum int) {
 	defer wg.Done()
 	var count int
 	for {
-		server_id := <-chan_task
-		fmt.Printf("%d 完成了检查任务\n", server_id)
+		<-chan_task
+		// server_id := <-chan_task
+		// fmt.Printf("%d 完成了检查任务\n", server_id)
 		count++
 		if count == reqNum {
 			fmt.Println("检查协助已执行完毕")

@@ -7,8 +7,9 @@ package utils
 // }
 
 type Resp struct {
-	RetCode int    `json:"retCode"`
-	Msg     string `json:"message"`
+	RetCode  int    `json:"retCode"`
+	Msg      string `json:"message"`
+	ServerId string `json:"server_id"`
 }
 
 type Server struct {
@@ -19,7 +20,7 @@ type Server struct {
 
 type ChanMsg struct {
 	Stime    string
-	ServerId int
+	ServerId string
 	Msg      string
 }
 
