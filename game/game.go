@@ -159,7 +159,7 @@ func CheckOK(chan_task <-chan int, chanMsg chan utils.ChanMsg, reqNum int) {
 		// fmt.Printf("%d 完成了检查任务\n", server_id)
 		count++
 		if count == reqNum {
-			fmt.Println("检查协助已执行完毕")
+			fmt.Println("监测协程已执行完毕")
 			close(chanMsg)
 			break
 		}
