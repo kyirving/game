@@ -22,7 +22,6 @@ var (
 )
 
 func Run() {
-
 	if isExit() {
 		fmt.Println("维护中!!!")
 		return
