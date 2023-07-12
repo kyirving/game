@@ -48,6 +48,8 @@ func init() {
 		configFilePath = "./config"
 		configFileName = "config.dev"
 	}
+	fmt.Println("env:", env)
+	fmt.Printf("configName:%s\n configPath:%s\n", configFileName, configFilePath)
 
 	viper.SetConfigName(configFileName) // name of config file (without extension)
 	viper.SetConfigType("ini")          // REQUIRED if the config file does not have the extension in the name
