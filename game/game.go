@@ -62,7 +62,8 @@ func Run() {
 	fmt.Println("All goroutines finish")
 	fmt.Println("totalReq :", totalReq)
 	// 遍历
-	content := "**【盟重英雄冰雪单职业（244）】区服异常通知**\n"
+	// content := "**【盟重英雄冰雪单职业（244）】区服异常通知**\n"
+	content := ""
 	msgMap.Range(func(key, value interface{}) bool {
 		if ChanMsg, ok := value.(utils.ChanMsg); ok {
 			content += fmt.Sprintf("> server_id: %s \n> 异常信息 ： %s \n\n", ChanMsg.ServerId, ChanMsg.Msg)
@@ -71,8 +72,11 @@ func Run() {
 	})
 
 	if content != "" {
+		title := "**【盟重英雄冰雪单职业（244）】区服异常通知**\n"
+		content = title + content
 		fmt.Println(content)
 		fmt.Println("准备发送报警")
+
 		is_send := utils.SendMessage(content)
 		if !is_send {
 			fmt.Println("企业微信报警失败！！！")
