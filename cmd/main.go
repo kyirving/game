@@ -10,6 +10,10 @@ func main() {
 	start := time.Now()
 	game.Run()
 
+	fmt.Println(111)
+	fmt.Println(222)
+	fmt.Println(333)
+
 	elapsed := time.Since(start)
 	fmt.Printf("程序运行时间：%s\n", elapsed)
 
